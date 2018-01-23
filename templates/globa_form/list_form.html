@@ -1,0 +1,191 @@
+{% extends "base/base-index.html" %}
+{% block centent %}
+{% load monitor_server_tags %}
+
+<div id="content" >
+    <div id="content-header">
+        <div id="breadcrumb">
+            <a href="/" title="Go to Home" class="tip-bottom"><i class="icon-home"></i> Home</a>
+            <a href="/host_list/" class="tip-bottom">主机列表</a>
+        </div>
+    </div>
+
+    <div class="col-sm-12">
+        <div class="ibox float-e-margins" id="all">
+            <div class="quick-actions">
+                <h3> {% get_model_verbose_name admin_class%}</h3>
+                <p></p>
+            </div>
+
+            <form >
+                <div class="row-fluid">
+                    <div class="span3">
+                        <div class=" col-sm-1">
+                            {% if model_name == 'host' %}
+                                <a href="/host_add/{{ app_name }}/{{ model_name }}" class="btn btn-sm btn-primary">Add {% get_model_verbose_name admin_class %}</a>
+                            {% elif model_name == 'idc' %}
+                                <a href="/host_idc_add/{{ app_name }}/{{ model_name }}" class="btn btn-sm btn-primary">Add {% get_model_verbose_name admin_class %}</a>
+                            {% elif model_name == 'hostgroup' %}
+                                <a href="/host_group_add/{{ app_name }}/{{ model_name }}" class="btn btn-sm btn-primary">Add {% get_model_verbose_name admin_class %}</a>
+                            {% elif model_name == 'master' %}
+                                <a href="/host_master_add/{{ app_name }}/{{ model_name }}" class="btn btn-sm btn-primary">Add {% get_model_verbose_name admin_class %}</a>
+                            {% elif model_name == 'namespaces' %}
+                                <a href="/master_ns_add/{{ app_name }}/{{ model_name }}" class="btn btn-sm btn-primary">Add 项目</a>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="span6"></div>
+                    <div class="span3">
+                        <div class="col-lg-3">
+                            <input type="search" name="_q" value="{% if q_val %}{{ q_val }}{% endif %}" {% if model_name == 'host' %}placeholder="主机名 IP地址{% for s_field in admin_class.search_fields%} {% endfor %}"{% elif model_name == 'idc'%}placeholder="IDC名称 地址{% for s_field in admin_class.search_fields%}{% endfor %}"{% elif model_name == 'namespaces'%}placeholder="项目管理{% for s_field in admin_class.search_fields%} {% endfor %}"{% elif model_name == '主机组'%}placeholder="主机组{% for s_field in admin_class.search_fields%} {% endfor %}"{% elif model_name == 'master'%}placeholder="主机名 状态 角色 版本{% for s_field in admin_class.search_fields%} {% endfor %}"{% endif %}  class="form-control">
+                        </div>
+                    </div>
+                </div>
+            </form>
+            <hr>
+            <form method="post" onsubmit="return FormVerification(this)">{% csrf_token %}
+                <table class="table table-bordered ">
+                    <thead>
+                        <tr>
+                            {% if not  admin_class.list_display %}
+                                <th>{{ model_name }}</th>
+                            {% else %}
+                                <th class='text-center'>
+                                    <input onclick="checkAll(this)" type="checkbox" />
+                                </th>
+                                {% for column in admin_class.list_filter %}
+                                <th class='text-center'>
+                                {% if order_column == column  %}
+                                    {{ order_column }}
+                                {% else %}
+                                     {{ column }}
+                                {% endif %}
+                                </th>
+                                {% endfor %}
+                                <th class='text-center' >操作</th>
+                            {% endif %}
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <form method="post">
+                            {% for row in querysets %}
+                                <tr class='gradeX '  >
+                                    {% build_table_row row admin_class app_name model_name %}
+                                    <form method='post'>
+                                        {% csrf_token %}
+                                        {% get_enable_objects row app_name model_name admin_class%}
+                                    </form>
+                                </tr>
+                            {% endfor %}
+                        </form>
+                    </tbody>
+                </table>
+                <hr>
+            <div class="content">
+                <tr>
+                    {% if model_name == 'host' %}
+                        <td><input id="host_conn" type='button' class='btn btn-sm btn-warning' value='连接' /></td>
+                    {% else %} {{ disable }}{% endif %}
+                    <td><input onclick="btn_del(this) "  type='button' class='btn btn-danger btn-sm' value='删除' /></td>
+                </tr>
+            </div>
+            </form>
+
+
+            <div class="pagination">
+                <ul class="pagination">
+                    <li class=""><a href="?_page=1{{ filter_condtions_string }}">首页 </a></li>
+                    {% for p in paginator.page_range %}
+                        {% get_abs_value p  querysets.number as i %} <!--i变量是当前页与循环的次数的差的绝对值 -->
+
+                         {% if i < 3 %}
+                            {% if p == querysets.number %}
+                                <li class="active"><a href="?_page={{ p }}{{ filter_condtions_string }}&_o={{ last_orderby_key }}">{{ p }} </a></li>
+                            {% else %}
+                                <li class=""><a href="?_page={{ p }}{{ filter_condtions_string }}&_o={{ last_orderby_key }}">{{ p }}</a></li>
+
+                            {% endif %}
+                        {% endif %}
+                    {% endfor %}
+                    <li class="">
+                        <a href="?_page={{ paginator.num_pages }}{{ filter_condtions_string }}&_o={{ last_orderby_key }}">尾页</a>
+                    </li>
+                    <li class="">
+                        <a>总计 {{ querysets.paginator.num_pages }}页</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+
+    function checkAll(self) {
+        if ( $(self).prop('checked')){
+
+            $("table .row-obj").prop('checked',true)
+        }else {
+             $("table .row-obj").prop('checked',false)
+        }
+
+    }
+
+    function conn(self) {
+        console.log('连接主机');
+        var host_name = document.getElementsByName('_selected_obj');
+{#        var host_status = document.getElementById('#host_active').appendChild("<a style='color:#1CD61C'> 连接中 </a>'");#}
+        var host_status = document.getElementById('#host_active');
+        var len = host_name.length;
+        for (var i = 0;i< len;i++){
+            console.log()
+        }
+    }
+    function btn_del(self) {
+        console.log('删除');
+        var check=document.getElementsByName('_selected_obj');
+        var len = check.length;
+        var idAll="";
+        for (var i =0;i<len;i++){
+            console.log('循环中');
+            if(check[i].checked){
+                console.log(check[i]);
+                idAll += check[i].value+",";
+            }
+            else {
+                console.log('没有选择条目');
+                alert('请选择要删除的条目')
+            }
+
+        }
+
+        window.location.href="/host_auto_del/{{ app_name }}/{{ model_name }}/?idAll="+idAll;
+        alert("删除成功");
+    }
+
+
+    $("tbody [id=pod_count]").each(function(){
+        console.log(this.value);
+        if($(this).html()=='None'||$(this).html()==null){
+            $(this).html('0');
+        }
+    });
+
+
+   function FormVerification(self) {
+
+       var action_val = $("select[name='admin_action']").val();
+       console.log("-------",action_val)
+       if ( $('table .row-obj:checked').length ==0  ){
+                alert("必须选择对象");
+                return false;
+       }
+       if (!action_val){
+                alert("必须选择admin action");
+                return false;
+       }
+       return true
+   }
+
+
+</script>
+{% endblock %}

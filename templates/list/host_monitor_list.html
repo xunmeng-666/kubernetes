@@ -1,0 +1,377 @@
+{#{% extends 'globa_form/list_form.html' %}#}
+
+{% extends 'base/base-index.html' %}
+{% block centent %}
+{% load monitor_server_tags %}
+<div id="content">
+    <div id="content-header">
+        <div id="breadcrumb"> <a class="tip-bottom"><i class="icon icon-signal"></i>Host Monitor</a></div>
+    </div>
+
+    <div class="quick-actions">
+        <h3> {% get_model_verbose_name admin_class%}</h3>
+    </div>
+
+    <div class="container-fluid">
+        <div class="quick-actions_homepage">
+            <div class="row-fluid">
+                <div class="span1">
+                    <div class=" col-sm-1">
+                        <label>选择主机：</label>
+                    </div>
+                </div>
+                <div class="span1" style="margin-left: 0px">
+                    <div class="col-sm-1">
+                        <select id="host_info" >
+                            <option label="-----------"></option>
+                            {% for host in host_list %}
+                            <option label="{{ host.hostname__ip_address}}" value="{{ host.hostname__ip_address }}"></option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+            </div>
+                  <hr>
+
+            <div class="row-fluid">
+                <div class="span12">
+                    <div class="widget-box ">
+                        <div class="span1">
+                            <div class="col-lg-1">
+                                <select id="historical_data" >
+                                    <option label="即时数据" value="now_data"></option>
+                                    <option label="3天数据" value="three_data"></option>
+                                    <option label="7天数据" value="seven_data"></option>
+                                    <option label="30天数据" value="thirty_data"></option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="widget-content">
+                            <div id="main" style="width: auto;height:400px;"></div>
+                        </div>
+                    </div>
+
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+<script type="text/javascript">
+    var myChart = echarts.init(document.getElementById('main'));
+    var option = {
+        title: {
+            text: '主机流量图'
+        },
+        tooltip : {
+            trigger: 'axis',
+            axisPointer: {
+                type: 'cross',
+                label: {
+                    backgroundColor: '#6a7985'
+                }
+            }
+        },
+        legend: {
+            data:[]
+        },
+        toolbox: {
+            feature: {
+                saveAsImage: {}
+            }
+        },
+        grid: {
+            left: '3%',
+            right: '4%',
+            bottom: '3%',
+            containLabel: true
+        },
+        xAxis : [
+            {
+                type : 'category',
+                boundaryGap : false,
+                data : []
+            }
+        ],
+        yAxis : [
+            {
+                type : 'value'
+            }
+        ],
+        series : [
+            {
+                name:'CPU',
+                type:'line',
+                stack: '总量',
+                areaStyle: {normal: {}},
+                data:[]
+            },
+            {
+                name:'内存',
+                type:'line',
+                stack: '总量',
+                areaStyle: {normal: {}},
+                data:[]
+            },
+            {
+                name:'磁盘',
+                type:'line',
+                stack: '总量',
+                areaStyle: {normal: {}},
+                data:[]
+            },
+
+            {
+                name:'InPut',
+                type:'line',
+                stack: '总量',
+                areaStyle: {normal: {}},
+                data:[]
+            },
+            {
+                name:'OutPut',
+                type:'line',
+                stack: '总量',
+                label: {
+                    normal: {
+                        show: true,
+                        position: 'top'
+                    }
+                },
+                areaStyle: {normal: {}},
+                data:[]
+            }
+        ]
+    };
+    myChart.showLoading({
+        text: "请选择主机"
+    });
+    var get_time = [];
+    var date_name =[];
+    var cpu_name = [];
+    var ram_name = [];
+    var disk_name = [];
+    var input_name=[];
+    var output_name=[];
+    function defalut_func() {
+        date_name =[];
+        cpu_name = [];
+        ram_name = [];
+        disk_name = [];
+        input_name=[];
+        output_name=[];
+    }
+
+    $(function () {
+
+        $("#host_info").change(function () {
+            var new_info = (this).value;
+            console.log('获取更改后的info',new_info);
+
+            console.log('main',myChart);
+            myChart.showLoading({text: "数据加载中"});
+
+            if(new_info==' ' || new_info==null){
+                console.log("选择的IP是空的");
+                defalut_func();
+                myChart.showLoading({
+                    text: "请选择主机"
+                });
+            }
+            else {
+                console.log('定义流量图菜单');
+                option.legend.data = ['CPU','内存','磁盘','InPut','OutPut'];
+                console.log('清空流量图数据');
+                defalut_func();
+                console.log("处理IP信息");
+                getHostIp(new_info);
+            }
+        });
+    });
+    function getHostIp(new_info) {
+        console.log('getHostIp 打印接收到的new_info',new_info);
+        if(new_info==null || new_info==''){
+            console.log('继承的IP是空的:');
+            console.log('检查字段是否有IP');
+            var info_func = document.getElementById("host_info");
+            var info_ip = info_func.value;
+            if(info_ip==null || info_ip==''){
+                console.log('字段是空的');
+                defalut_func();
+                myChart.showLoading({
+                    text: "请选择主机"
+                });
+            }
+            else {
+                console.log('字段中包含主机IP',info_ip);
+                console.log("获取选中的IP",new_info);
+                console.log("获取时间段");
+                getTimeSolt(new_info);
+            }
+        }
+        else {
+            console.log('已获取选中的IP',new_info);
+            console.log("获取选中的IP",new_info);
+            console.log("获取时间段");
+            getTimeSolt();
+        }
+    }
+    $("#historical_data").change(function () {
+        console.log('判断选择的IP是否为空');
+        getTimeSolt();
+
+    });
+    function getTimeSolt() {
+        console.log('处理时间并执行ajax');
+        var get_historical_time = document.getElementById('historical_data');
+        var host_status = document.getElementById("host_info");
+        var new_info = host_status.value;
+        console.log('当前选择的主机:',new_info);
+        date_name=[];
+        if(new_info==''||new_info==null){alert("请先选择主机")}
+        else {
+            date_name=[];
+            console.log('获取时间');
+            var func_data = get_historical_time.value;
+            console.log('当前选择的时间:',func_data);
+
+            if (func_data =='now_data'){
+                get_time=[];
+                console.log("当前时间为now_data的定时器");
+                getTime(0);
+                var no_data =window.setInterval(ajax1(new_info,func_data),15000);
+            }
+
+            else if(func_data == 'three_data'){
+                console.log('关闭定时器');
+                window.clearInterval(no_data);
+                console.log('定时器关闭成功');
+                getTime(3);
+                console.log('执行ajax');
+                ajax1(new_info,func_data);
+            }
+            else if(func_data == 'seven_data'){
+                console.log('关闭定时器');
+                window.clearInterval(no_data);
+                console.log('定时器关闭成功');
+                console.log('定义时间轴');
+                getTime(7);
+                console.log('执行ajax');
+                ajax1(new_info,func_data);
+            }
+            else if(func_data == 'thirty_data'){
+                console.log('关闭定时器');
+                window.clearInterval(no_data);
+                console.log('定时器关闭成功');
+                getTime(30);
+                console.log('执行ajax');
+                ajax1(new_info,func_data);
+            }
+        }
+
+    }
+    function getTime(n) {
+        console.log('初始化时间');
+        defalut_func();
+        var myDate = new Date(); //获取今天日期
+        myDate.setDate(myDate.getDate() - n);
+        get_time = [];
+        var dateTemp;
+        var flag = 1;
+        if(n=='0'){
+            dateTemp = ((myDate.getHours()<"10" ? "0"+myDate.getHours():myDate.getHours())+":"+(myDate.getMinutes() <"10"? "0"+myDate.getMinutes():myDate.getMinutes())+":"+(myDate.getSeconds()<"10"? "0"+myDate.getSeconds():myDate.getSeconds()));
+            get_time.push(dateTemp);
+            myDate.setSeconds(myDate.getSeconds() + flag);
+        }
+        for (var i = 0; i < n; i++) {
+            dateTemp = (myDate.getFullYear()+"-"+((myDate.getMonth()+1)<"10" ? "0"+(myDate.getMonth()+1):(myDate.getMonth()+1))+"-"+(myDate.getDate()<"10"? "0"+myDate.getDate():myDate.getDate()));
+            get_time.push(dateTemp);
+            myDate.setDate(myDate.getDate() + flag);
+        }
+    }
+
+    function ajax1(new_info,func_data) {
+        $.ajax({
+            url: "/host_monitor_list/",
+            asyns: true,
+            type: 'post',
+            datetype: 'json',
+            data: {'host_ip': new_info,'func_data':func_data},
+            success: function (data) {
+                console.log('获取data',data);
+                var data_dict = JSON.parse(data);
+                console.log('清空预设数组',get_time);
+                console.log('ajax date_name',date_name);
+                if(data && get_time != ''){
+                    console.log('有data',data_dict);
+                    for(var i = 0;i in data_dict;i++){
+                        for(var k = 0;k < get_time.length ;k++){
+                            console.log('获取host_date数据');
+                            console.log('host_date数据',data_dict[i].host_date);
+                            if(get_time[k]==data_dict[i].host_date){
+{#                                匹配的日志在指定位置插入数据#}
+                                date_name.splice(k,1,get_time[k]);
+                                input_name.splice(k,1,data_dict[i].host_input);
+                                output_name.splice(k,1,data_dict[i].host_output);
+                                ram_name.splice(k,1,data_dict[i].ram_use);
+                                cpu_name.splice(k,1,data_dict[i].cpu_use);
+                                disk_name.splice(k,1,data_dict[i].disk_use);
+
+                            }
+                            else {
+{#                                不匹配的日期，在指定位置插入null#}
+                                console.log('input_name',input_name[k]);
+                                if(input_name[k] == '' || input_name[k] == null){
+                                    date_name.splice(k,1,get_time[k]);
+                                    input_name.splice(k,1,0);
+                                    output_name.splice(k,1,0);
+                                    ram_name.splice(k,1,0);
+                                    cpu_name.splice(k,1,0);
+                                    disk_name.splice(k,1,0);
+                                }
+
+                            }
+                        }
+
+                    }
+
+
+
+                }
+                else {
+                    console.log('实时数据');
+                    for(var i = 0;i in data_dict;i++){
+                        date_name.push(data_dict[i].host_date);
+                        input_name.push(data_dict[i].host_input);
+                        output_name.push(data_dict[i].host_output);
+                        ram_name.push(data_dict[i].ram_use);
+                        cpu_name.push(data_dict[i].cpu_use);
+
+                    }
+                    myChart.showLoading(
+                        {text: '没有查到任何数据，尝试选择其他时间'}
+                    )
+                }
+                console.log('显示date_name数据',date_name);
+                console.log('显示date_input数据',input_name);
+                myChart.hideLoading();
+                console.log('给option 赋值');
+                option.xAxis[0].data = date_name;
+                option.series[0].data = cpu_name;
+                option.series[1].data = ram_name;
+                option.series[2].data = disk_name;
+                option.series[3].data = input_name;
+                option.series[4].data = output_name;
+                myChart.setOption(option);
+                console.log('赋值成功，查看表数据',option.xAxis[0].data)
+            }
+        })
+    }
+
+</script>
+
+    
+{% endblock %}
