@@ -208,14 +208,74 @@ def admin_func():
         admin_class = site.registered_admins[app_name]
         return admin_class
 
+def update_host(admin_class):
+    print('更新主机容器数量')
+    obj = admin_class.model.objects.all()
+    try:
+        for host in obj.values('id', 'hostname'):
+            obj.filter(id=host.get('id')).update(pod_count=obj.filter(pod__host_id=host.get('id')).count())
+    except Exception:
+        pass
+
+@login_required
+def pod_list(request,no_render=False):
+    print('request--hostlist',request)
+
+    for app_name in site.registered_admins:
+        admin_class = site.registered_admins[app_name].get("pod")
+        print('admin',admin_class)
+        model_name = admin_class.model._meta.model_name
+        print('admin-class',admin_class.list_display)
+        update_host(admin_class)
+        if request.method == "POST":  # admin action
+            action_func_name = request.POST.get('admin_action')
+
+            action_func = getattr(admin_class, action_func_name)
+
+            print(request.POST)
+            selected_obj_ids = request.POST.getlist("_selected_obj")
+            selected_objs = admin_class.model.objects.filter(id__in=selected_obj_ids)
+            action_res = action_func(request, selected_objs)
+            if action_res:
+                return action_res
+            return redirect(request.path)
+        else:
+            # print("--model class",model_class,locals())
+            querysets, filter_conditions = get_filter_objs(request, admin_class)
+            print('fitler_condi--*', filter_conditions)
+            print("filte---", querysets)
+            print("admin_class1---", admin_class)
+            querysets, q_val = get_search_objs(request, querysets, admin_class)
+            print('q_val', q_val)
+            print('request--get',request)
+            querysets, new_order_key, order_column, last_orderby_key = get_orderby_objs(request, querysets)
+
+            paginator = Paginator(querysets, admin_class.list_per_page)  # Show 25 contacts per page
+            page = request.GET.get('_page')
+            try:
+                querysets = paginator.page(page)
+            except PageNotAnInteger:
+                # If page is not an integer, deliver first page.
+                querysets = paginator.page(1)
+            except EmptyPage:
+                # If page is out of range (e.g. 9999), deliver last page of results.
+                querysets = paginator.page(paginator.num_pages)
+        if no_render:  # 被其它函数调用，只返回数据
+            return locals()
+        else:
+        # querysets, filter_condtions = get_filter_objs(request, admin_class)
+            return render(request, 'list/pod_list.html', locals())
+
 
 @login_required
 def host_list(request,no_render=False):
     print('request--hostlist',request)
+
     for app_name in site.registered_admins:
         admin_class = site.registered_admins[app_name].get("host")
         model_name = admin_class.model._meta.model_name
         print('admin-class',admin_class.list_display)
+        update_host(admin_class)
         if request.method == "POST":  # admin action
             action_func_name = request.POST.get('admin_action')
 
@@ -296,7 +356,7 @@ def pod_list(request,no_render=False):
         return locals()
     else:
         # querysets, filter_condtions = get_filter_objs(request, admin_class)
-        return render(request, 'pod_list.html', locals())
+        return render(request, 'list/pod_list.html', locals())
 
 @login_required
 def master_list(request,no_render=False):
@@ -663,7 +723,7 @@ def host_monitor_list(request):
             host_date = date_function(monitor_data, host_ip, day_count)
             print('30天数据', host_date)
             return HttpResponse(json.dumps(host_date))
-    return render(request, 'list/host_monitor_list.html', locals())
+    return render(request, 'monitor/host_monitor_list.html', locals())
 
 def date_function(monitor_data,host_ip,day_count):
     print('day_count',day_count)
@@ -701,31 +761,69 @@ def date_function(monitor_data,host_ip,day_count):
 @login_required
 def table_obj_conn(request,app_name,model_name,obj_name):
     print('request--conn',request)
+    print('obj_name',obj_name)
+    if request.method == 'POST':
 
-    if app_name in site.registered_admins:
-        if model_name in site.registered_admins[app_name]:
-            admin_class = site.registered_admins[app_name][model_name]
-            print('admin_class',admin_class)
-            # print('get_id', obj_id)
+        admin_class = site.registered_admins[app_name][model_name]
+        print('admin_class',admin_class)
+        # print('get_id', obj_id)
 
-            obj = admin_class.model.objects.get(id=obj_name)
-            print("obj-dir--", obj)
-            obj_class = core_system.conn_paramiko(obj)
-            # obj_class = core_system.Redis_db(obj)
-            ret = {'status': True, 'error': None}
-            if obj_class:
-                obj.enabled = 1
-                obj.save()
+        obj = admin_class.model.objects.get(id=obj_name)
 
-                print('连接成功')
-                return HttpResponse(json.dumps(ret))
+        print("obj-dir--", obj)
+        obj_class = core_system.Conn_paramiko(obj).start_conn()
+        # obj_class = core_system.Redis_db(obj)
+        ret = {'status': True, 'error': None}
+        print('paramiko 返回状态码',obj_class)
+        if obj_class is True:
+            obj.host_active = '连接成功'
+            obj.save()
 
-            else:
-                print('连接失败')
-                ret['status'] = False
-                ret['error'] = "密码错误"
-                # 客户端连接失败
-                return HttpResponse(json.dumps(ret))
+            print('连接成功')
+            return HttpResponse(json.dumps(ret))
+
+        else:
+            print('连接失败')
+            ret['status'] = False
+            ret['error'] = "密码错误"
+            # 客户端连接失败
+            obj.host_active = '连接失败'
+            obj.save()
+            return HttpResponse(json.dumps(ret))
+
+@csrf_exempt
+@login_required
+def table_obj_disconn(request,app_name,model_name,obj_name):
+    print('request--conn',request)
+    print('obj_name',obj_name)
+    if request.method == 'POST':
+
+        admin_class = site.registered_admins[app_name][model_name]
+        print('admin_class',admin_class)
+        # print('get_id', obj_id)
+
+        obj = admin_class.model.objects.get(id=obj_name)
+
+        print("obj-dir--", obj)
+        obj_class = core_system.Conn_paramiko(obj).start_conn()
+        # obj_class = core_system.Redis_db(obj)
+        ret = {'status': True, 'error': None}
+        print('paramiko 返回状态码',obj_class)
+        if obj_class is True:
+            obj.host_active = '未连接'
+            obj.save()
+
+            print('连接成功')
+            return HttpResponse(json.dumps(ret))
+
+        else:
+            print('连接失败')
+            ret['status'] = False
+            ret['error'] = "密码错误"
+            # 客户端连接失败
+            obj.host_active = '连接失败'
+            obj.save()
+            return HttpResponse(json.dumps(ret))
 
 @csrf_exempt
 @login_required
@@ -760,39 +858,23 @@ def host_auto_conn(request,app_name,model_name):
                     return HttpResponse(json.dumps(ret))
 
     # return redirect('/list/',locals())
-
-@login_required
-def table_obj_del(request,app_name,model_name,obj_name):
-    print('删除操作',request.method)
-    if app_name in site.registered_admins:
-        if model_name in site.registered_admins[app_name]:
-            admin_class = site.registered_admins[app_name][model_name]
-            obj = admin_class.model.objects.get(id=obj_name)
-            print('obj-dir--',dir(obj))
-            obj.delete()
-
-    return redirect('/host_list/')
-
+@csrf_exempt
 @login_required
 def table_auto_del(request,app_name,model_name):
+    print('request',request)
+    ret = {'status': True, 'error': None}
     try:
-        print('request',request.GET.get('idAll').split(','))
-        for get_id in request.GET.get('idAll').split(','):
-            print('GET--',get_id)
-            for obj_id in get_id.split(","):
-                print('get--1',obj_id)
-                if app_name in site.registered_admins:
-                    print('app_name',app_name)
-                    if model_name in site.registered_admins[app_name]:
-                        print('model-name',model_name)
-                        admin_class = site.registered_admins[app_name][model_name]
-                        print('admin_class',admin_class)
-                        obj = admin_class.model.objects.get(id=get_id)
-                        print('obj-dir--', dir(obj))
-                        obj.delete()
+        if request.method =='POST':
+            print('POST请求')
+            admin_class = site.registered_admins[app_name][model_name]
+            for get_id in request.GET.get('idAll').split(','):
+                print('POST',get_id)
+                obj = admin_class.model.objects.get(id=get_id)
+                obj.delete()
     except ValueError:
         pass
-    return redirect('/host_list/')
+        return HttpResponse(json.dumps(ret))
+
 
 
 @login_required
@@ -913,8 +995,8 @@ def update_group(admin_class):
     print('开始update')
     obj = admin_class.model.objects.all()
     try:
-        for host in obj.values('id'):
-            obj.filter(id=host.get('id')).update(host_count=obj.filter(host__host_group_id=host.get('id')).count())
+        for host in obj.values('id','group_name'):
+            obj.filter(id=host.get('id')).update(host_count=obj.filter(host__host_group_id=host.get('group_name')).count())
     except Exception:
         pass
 

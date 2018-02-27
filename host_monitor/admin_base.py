@@ -25,8 +25,6 @@ class AdminSite(object):
         self.registered_admins[app_label][model_or_iterable._meta.model_name]=admin_class
 
 
-
-
 site = AdminSite()
 
 

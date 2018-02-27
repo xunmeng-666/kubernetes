@@ -304,44 +304,54 @@
                 console.log('获取data',data);
                 var data_dict = JSON.parse(data);
                 console.log('清空预设数组',get_time);
-                console.log('ajax date_name',date_name);
-                if(data && get_time != ''){
-                    console.log('有data',data_dict);
-                    for(var i = 0;i in data_dict;i++){
-                        for(var k = 0;k < get_time.length ;k++){
+                console.log('ajax date_name',data_dict);
+                if(data_dict!='') {
+                    console.log('有data', data_dict);
+                    for (var i = 0; i in data_dict; i++) {
+                        for (var k = 0; k < get_time.length; k++) {
                             console.log('获取host_date数据');
-                            console.log('host_date数据',data_dict[i].host_date);
-                            if(get_time[k]==data_dict[i].host_date){
-{#                                匹配的日志在指定位置插入数据#}
-                                date_name.splice(k,1,get_time[k]);
-                                input_name.splice(k,1,data_dict[i].host_input);
-                                output_name.splice(k,1,data_dict[i].host_output);
-                                ram_name.splice(k,1,data_dict[i].ram_use);
-                                cpu_name.splice(k,1,data_dict[i].cpu_use);
-                                disk_name.splice(k,1,data_dict[i].disk_use);
+                            console.log('host_date数据', data_dict[i].host_date);
+                            if (get_time[k] == data_dict[i].host_date) {
+                                {#                                匹配的日志在指定位置插入数据#}
+                                date_name.splice(k, 1, get_time[k]);
+                                input_name.splice(k, 1, data_dict[i].host_input);
+                                output_name.splice(k, 1, data_dict[i].host_output);
+                                ram_name.splice(k, 1, data_dict[i].ram_use);
+                                cpu_name.splice(k, 1, data_dict[i].cpu_use);
+                                disk_name.splice(k, 1, data_dict[i].disk_use);
 
                             }
                             else {
-{#                                不匹配的日期，在指定位置插入null#}
-                                console.log('input_name',input_name[k]);
-                                if(input_name[k] == '' || input_name[k] == null){
-                                    date_name.splice(k,1,get_time[k]);
-                                    input_name.splice(k,1,0);
-                                    output_name.splice(k,1,0);
-                                    ram_name.splice(k,1,0);
-                                    cpu_name.splice(k,1,0);
-                                    disk_name.splice(k,1,0);
+                                {#                                不匹配的日期，在指定位置插入null#}
+                                console.log('input_name', input_name[k]);
+                                if (input_name[k] == '' || input_name[k] == null) {
+                                    date_name.splice(k, 1, get_time[k]);
+                                    input_name.splice(k, 1, 0);
+                                    output_name.splice(k, 1, 0);
+                                    ram_name.splice(k, 1, 0);
+                                    cpu_name.splice(k, 1, 0);
+                                    disk_name.splice(k, 1, 0);
                                 }
 
                             }
                         }
 
                     }
-
-
-
                 }
+                else if(data_dict==''){
+                    console.log('data_dict是空的，开始填0');
+                    for(var i =0;i<get_time.length;i++){
+                        date_name.push(get_time[i]);
+                        input_name.push('0');
+                        output_name.push('0');
+                        ram_name.push('0');
+                        cpu_name.push('0');
+                    }
+                    console.log('显示date_name',date_name,ram_name)
+                }
+
                 else {
+
                     console.log('实时数据');
                     for(var i = 0;i in data_dict;i++){
                         date_name.push(data_dict[i].host_date);
@@ -351,6 +361,15 @@
                         cpu_name.push(data_dict[i].cpu_use);
 
                     }
+{#                    console.log('实时数据');#}
+{#                    for(var i = 0;i in data_dict;i++){#}
+{#                        date_name.push(data_dict[i].host_date);#}
+{#                        input_name.push(data_dict[i].host_input);#}
+{#                        output_name.push(data_dict[i].host_output);#}
+{#                        ram_name.push(data_dict[i].ram_use);#}
+{#                        cpu_name.push(data_dict[i].cpu_use);#}
+{##}
+{#                    }#}
                     myChart.showLoading(
                         {text: '没有查到任何数据，尝试选择其他时间'}
                     )

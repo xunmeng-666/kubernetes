@@ -88,8 +88,8 @@ class AccountAdmin(BaseUserAdmin):
 #     list_display = ['username','auth_type','password']
 
 class HostInfoAdmin(BaseAdmin):
-    list_display = ('hostname', 'ip_address', 'host_group','pod_count', 'idc','host_active')
-    list_filter = ('主机名','IP地址','主机组','容器数量','机房','连接')
+    list_display = ('id','hostname', 'ip_address', 'host_group','pod_count', 'idc','host_active')
+    list_filter = ('ID','主机名','IP地址','主机组','容器数量','机房','连接')
     search_fields = ['hostname', 'ip_address',]
     list_per_page = 5
     filter_horizontal = ('hostname', 'ip_address', 'port', 'idc','system_user', )
@@ -123,7 +123,7 @@ class MasterInfo(BaseAdmin):
     search_fields=['status','roles','version','namespaces']
 
 class PodInfo(BaseAdmin):
-    list_display = ("name","container_id",'pod_ip','host','hostport','namespaces','pod_status')
+    list_display = ("name","container_id",'pod_ip','host_ip','host_port','namespaces','pod_status')
     list_filter = ("名字","容器ID",'PodIP','主机','对外端口','命名空间','运行状态')
     search_fields=['name','pod_status']
 

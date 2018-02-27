@@ -1,12 +1,6 @@
 import socketserver,json,subprocess,paramiko,os,time
 from host_monitor import models
 
-def test():
-    admin_class = models
-    print("admin",admin_class)
-
-a = test()
-print('a',a)
 
 def conn_action(func,obj_id):
     '''
@@ -37,21 +31,65 @@ def conn_action(func,obj_id):
         print('文件上传失败')
         return 1
 
+class Conn_paramiko(object):
+    def __init__(self,func):
 
+        self.hostname = func.ip_address
+        self.port = func.port
+        self.username = func.username
+        self.password = func.password
+        self.key = func.host_key
+        self.start_conn()
+        self.remotefile = "/var/lib/"
+        self.loadfile = None
+        self.ssh = paramiko.SSHClient()
+        self.ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
 
-def conn_paramiko(func):
-    print('func--',func.ip_address)
-    ssh = paramiko.SSHClient()
-    ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    try:
-        ssh.connect(hostname=func.ip_address, port=22, username=func.username, password=func.password, timeout=10)
-    # print('ssh_status',ssh_status)
+    def start_conn(self):
+        print('key',self.key)
 
+        if not self.key:
+            print('没有检测到key，使用密码连接主机')
+            conn_status = self.pwd_conn()
+            return conn_status
+        else:
+            print("使用key连接主机")
+            conn_status = self.key_conn()
+            return conn_status
+    def pwd_conn(self):
+        try:
+            self.ssh.connect(hostname=self.hostname,port=self.port,username=self.username,password=self.password,timeout=10)
 
-        return True
-    except Exception as e:
+            print("连接成功")
+            return True
+        except Exception :
+            print('连接失败')
+            return False
+    def key_conn(self):
+        try:
+            self.ssh.connect(hostname=self.hostname,port=self.port,username=self.username,key_filename=self.key,timeout=10)
+            return True
+        except Exception :
+            return False
 
-        return False
+    def put_file(self):
+        pass
+    def check_file(self):
+        pass
+
+# def conn_paramiko(func):
+#     print('func--',func.ip_address)
+#     ssh = paramiko.SSHClient()
+#     ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+#     try:
+#         ssh.connect(hostname=func.ip_address, port=22, username=func.username, password=func.password, timeout=10)
+#     # print('ssh_status',ssh_status)
+#
+#
+#         return True
+#     except Exception as e:
+
+        # return False
 
 def conn_command(func):
     ssh = paramiko.SSHClient()

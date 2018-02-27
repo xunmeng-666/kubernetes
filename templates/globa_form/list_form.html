@@ -55,10 +55,11 @@
                                 </th>
                                 {% for column in admin_class.list_filter %}
                                 <th class='text-center'>
+
                                 {% if order_column == column  %}
                                     {{ order_column }}
                                 {% else %}
-                                     {{ column }}
+                                    {{ column }}
                                 {% endif %}
                                 </th>
                                 {% endfor %}
@@ -88,6 +89,7 @@
                     {% else %} {{ disable }}{% endif %}
                     <td><input onclick="btn_del(this) "  type='button' class='btn btn-danger btn-sm' value='删除' /></td>
                 </tr>
+{#                <tr><td style="color: #07ff11"></td></tr>#}
             </div>
             </form>
 
@@ -108,7 +110,7 @@
                         {% endif %}
                     {% endfor %}
                     <li class="">
-                        <a href="?_page={{ paginator.num_pages }}{{ filter_condtions_string }}&_o={{ last_orderby_key }}">尾页</a>
+                        <a  href="?_page={{ paginator.num_pages }}{{ filter_condtions_string }}&_o={{ last_orderby_key }}">尾页</a>
                     </li>
                     <li class="">
                         <a>总计 {{ querysets.paginator.num_pages }}页</a>
@@ -118,63 +120,192 @@
         </div>
     </div>
 </div>
+
+<script>
+    $("tbody [id=host_active]").each(function () {
+        console.log('显示连接状态',$(this).text());
+        var discon = $(this).closest('tr').find('th').eq(8);
+        var obj_host = $(this).closest('tr').find('th').eq(8).text();
+        if($(this).text()=='未连接'){
+            console.log('未连接啊');
+            $(this).html("<a style='color :red'>未连接</a>");
+            discon.html("<a href='/host_edit/{{ app_name }}/{{ model_name }}/ obj_host' class='btn btn-xs btn-info' data-toggle='modal' >编辑</a> " +
+                "<a onclick='conn(this)' class='conn btn btn-xs btn-warning'>连接</a> " +
+                "<a onclick='host_del(this)' class='host_del btn btn-xs btn-danger asset_del' value='2'>删除</a>")
+        }
+        else if($(this).text()=='连接失败'){
+            $(this).html("<a style='color :red'>连接失败</a>");
+            discon.html("<a href='/host_edit/{app_name}/{model_name}/{obj_host}' class='btn btn-xs btn-info' data-toggle='modal' >编辑</a> " +
+                "<a onclick='conn(this)' class='conn btn btn-xs btn-warning'>连接</a> " +
+                "<a onclick='host_del(this)' class='host_del btn btn-xs btn-danger asset_del' value='2'>删除</a>")
+        }
+        else {
+            $(this).html("<a style='color:#1CD61C'> 连接成功 </a>");
+            discon.html("<a href='/host_edit/{app_name}/{model_name}/{obj_host}' class='btn btn-xs btn-info' data-toggle='modal' >编辑</a> " +
+                "<a onclick='disconn(this)'  class='disconn btn btn-xs btn-warning'>断开</a> " +
+                "<a onclick='host_del(this)' class='host_del btn btn-xs btn-danger asset_del' value='2'>删除</a>")
+        }
+    });
+
+
+    $(".disconn").on('click',function () {
+        console.log('断开按钮被点击');
+        var conn = $(this);
+        conn_func(conn);
+    });
+
+
+    $(".conn").on('click',function () {
+        console.log('连接被点击');
+        var conn = $(this);
+        conn_func(conn);
+    });
+
+    $(".host_del").on('click',function () {
+        console.log('删除被点击');
+        if(window.confirm('删除主机，会删除主机记录和主机上的客户端程序')){
+            var check=document.getElementsByName('_selected_obj');
+            var len = check.length;
+            console.log('len',len);
+            var idAll="";
+            for (var i =0;i<len;i++){
+                console.log('循环中');
+                if(check[i].checked){
+                    console.log(check[i]);
+                    idAll += check[i].value+",";
+                }
+            }
+            if(idAll=='') {
+                console.log('判断idAll');
+                var td_id = $(this).closest('tr').find('th').eq(1).text();
+                idAll = td_id+',';
+            }
+{#            window.location.href="/host_auto_del/{{ app_name }}/{{ model_name }}/?idAll="+idAll;#}
+            console.log('执行ajax');
+            $.ajax({
+                url:"/host_auto_del/{{ app_name }}/{{ model_name }}/?idAll=" + idAll,
+                type:'post',
+                success:function (data) {
+                    var del_status = JSON.parse(data);
+                    if(del_status==true){
+                        alert('删除成功')
+                    }else {
+                        alert('删除失败',del_status.error)
+                    }
+                }
+            })
+
+        }
+    });
+
+    function conn_func(conn) {
+        var conn_func = conn.closest('tr').find('th');
+        console.log('conn_status',$(conn_func).eq(7).text());
+        console.log('获取当前主机连接状态');
+        console.log('状态',conn.closest('tr').find('th').eq(7).text());
+        var conn_status = $.trim($(conn_func).eq(7).text());
+        var td_id = conn_func.eq(1).text();
+        console.log('conn_status',conn_status);
+        if(conn_status == '连接成功'){
+            console.log('当前主机已连接',td_id);
+            conn_func.eq(7).find('a').remove();
+            conn_func.eq(7).append("<a style='color:red'> 断开中...... </a>");
+
+            conn_func.eq(7).html("<a style='color:red'> 断开连接 </a>");
+
+            ajax_disconn(conn_func,td_id);
+        }
+        else {
+            console.log('主机未连接，开始连接主机');
+
+            console.log('td_id',td_id);
+            conn_func.eq(7).find('a').remove();
+            conn_func.eq(7).append("<a style='color:#1CD61C'> 连接中...... </a>");
+            setTimeout(ajax_conn(conn_func,td_id),3000);
+{#            ajax_conn(conn_func,td_id)#}
+        }
+    }
+    
+    function ajax_conn(conn_func,td_id) {
+        console.log('td_id',td_id);
+        $.ajax({
+            url:"/host_conn/{{ app_name }}/{{ model_name }}/"+td_id+'/',
+            type: 'post',
+            success:function (data) {
+               var data_dict = JSON.parse(data);
+               var status = conn_func.eq(7);
+
+               if(data_dict.status){
+                   console.log('timeout 11');
+                   setTimeout(3000);
+                   console.log('timeout 33');
+                   status.find('a').remove();
+                   status.append("<a style='color:#1CD61C'> 连接成功 </a>");
+                   location.reload()
+
+               }else{
+                   status.find('a').remove();
+                   status.append("<a style='color:red'> 连接失败 </a>");
+               }
+
+           }
+        })
+    }
+
+    function ajax_disconn(conn_func,td_id) {
+        console.log('ajax 断开连接');
+        $.ajax({
+            url: "/host_disconn/{{ app_name }}/{{ model_name }}/"+td_id + "/",
+            type: 'post',
+            success:function (data) {
+                if(data){location.reload()}
+
+            }
+        })
+    }
+    
+
+</script>
 <script>
 
-    function checkAll(self) {
-        if ( $(self).prop('checked')){
-
-            $("table .row-obj").prop('checked',true)
-        }else {
-             $("table .row-obj").prop('checked',false)
-        }
-
-    }
-
-    function conn(self) {
-        console.log('连接主机');
-        var host_name = document.getElementsByName('_selected_obj');
-{#        var host_status = document.getElementById('#host_active').appendChild("<a style='color:#1CD61C'> 连接中 </a>'");#}
-        var host_status = document.getElementById('#host_active');
-        var len = host_name.length;
-        for (var i = 0;i< len;i++){
-            console.log()
-        }
-    }
     function btn_del(self) {
         console.log('删除');
         var check=document.getElementsByName('_selected_obj');
         var len = check.length;
         var idAll="";
-        for (var i =0;i<len;i++){
-            console.log('循环中');
-            if(check[i].checked){
-                console.log(check[i]);
-                idAll += check[i].value+",";
+        if(window.confirm('删除主机，会删除主机记录和主机上的客户端程序')) {
+            for (var i = 0; i < len; i++) {
+                console.log('循环中');
+                if (check[i].checked) {
+                    console.log(check[i]);
+                    idAll += check[i].value + ",";
+                }
             }
-            else {
+            console.log('idAll', idAll);
+
+            if (idAll == "") {
                 console.log('没有选择条目');
                 alert('请选择要删除的条目')
+            } else {
+                window.location.href = "/host_auto_del/{{ app_name }}/{{ model_name }}/?idAll=" + idAll;
+                alert("删除成功");
             }
-
         }
-
-        window.location.href="/host_auto_del/{{ app_name }}/{{ model_name }}/?idAll="+idAll;
-        alert("删除成功");
     }
 
 
+
     $("tbody [id=pod_count]").each(function(){
-        console.log(this.value);
+
         if($(this).html()=='None'||$(this).html()==null){
             $(this).html('0');
         }
     });
 
-
    function FormVerification(self) {
 
        var action_val = $("select[name='admin_action']").val();
-       console.log("-------",action_val)
+       console.log("-------",action_val);
        if ( $('table .row-obj:checked').length ==0  ){
                 alert("必须选择对象");
                 return false;
@@ -186,6 +317,14 @@
        return true
    }
 
+    function checkAll(self) {
+        if ( $(self).prop('checked')){
 
+            $("table .row-obj").prop('checked',true)
+        }else {
+             $("table .row-obj").prop('checked',false)
+        }
+
+    }
 </script>
 {% endblock %}

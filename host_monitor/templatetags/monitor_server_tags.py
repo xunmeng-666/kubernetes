@@ -150,8 +150,10 @@ def get_enable_objects (row,app_name,model_name,admin_class):
     row_str += "<a href='/host_edit/{app_name}/{model_name}/{obj_host}' class='btn btn-xs btn-info' data-toggle='modal' >" \
                "编辑</a>  ".format(app_name=app_name, model_name=model_name, obj_host=row.id, )
     if model_name == 'host':
-        row_str += "<a onclick='conn(this)' class='conn btn btn-xs btn-warning' />连接</a>  ".format(app_name=app_name, model_name=model_name, obj_id=row.id,)
-    row_str += "<a href='/host_del/{app_name}/{model_name}/{obj_id}/' class='btn btn-xs btn-danger asset_del' value='2'>删除</a></td>"\
+        row_str += "<a onclick='disconn(this)'  class='btn btn-xs btn-warning ' />断开</a>  ".format(app_name=app_name, model_name=model_name, obj_id=row.id,)
+        # row_str += "<a id='conn'  class='conn btn btn-xs btn-warning' />连接</a>  ".format(app_name=app_name, model_name=model_name, obj_id=row.id,)
+        row_str += "<a onclick='conn(this)'  class='conn btn btn-xs btn-warning' />连接</a>  ".format(app_name=app_name, model_name=model_name, obj_id=row.id,)
+    row_str += "<a onclick='host_del(this)' class='host_del btn btn-xs btn-danger asset_del' value='2'>删除</a></td>"\
         .format(app_name=app_name, model_name=model_name, obj_id=row.id)
     row_str += "</th>"
     return mark_safe(row_str)
@@ -214,13 +216,12 @@ def build_table_row(row, admin_class, app_name, host_group):
                 if column_name == 'host':
                     td_ele = "<th class='text-center'><a>{column_val}</a></th>".format(column_val=column_val.hostname)
 
-
                 else:
                     td_ele = "<th class='text-center'><a href='/host_info_view/'>{column_val}</a></th>".format(column_val=column_val)
 
 
             elif index == 3:
-                td_ele = "<th class='text-center' id='{column_name}'>{column_val}</th>".format(column_name=column_name ,column_val=column_val)
+                td_ele = "<th class='text-center' id='{column_name}'><a>{column_val}<a></th>".format(column_name=column_name ,column_val=column_val)
 
             else:
                 print('非0--count',column_val)
@@ -229,10 +230,10 @@ def build_table_row(row, admin_class, app_name, host_group):
                 if column_name == 'host_group':
                     print('is if')
                     print("dir",dir(column_name))
-                    td_ele = "<th class='text-center'>{column_val}</th>".format(column_val=column_val.group_name)
+                    td_ele = "<th class='text-center'><a>{column_val}<a></th>".format(column_val=column_val.group_name)
 
                 else:
-                    td_ele = "<th class='text-center' id='{column_name}'>{column_val}</th>".format(column_name=column_name,column_val=column_val)
+                    td_ele = "<th class='text-center' id='{column_name}'><a>{column_val}<a></th>".format(column_name=column_name,column_val=column_val)
             row_ele += td_ele
 
     except Exception:

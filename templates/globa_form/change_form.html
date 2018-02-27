@@ -20,55 +20,55 @@
                     {{ form_obj.errors }}
                      <form class="form-horizontal" method="post">{% csrf_token %}
                     {% for field in form_obj %}
-                     {% if field.name == 'status' or field.name == 'host_active' or field.name == 'host_count' %}
-                        {{ pass }}
-                    {% else %}
+                        {% if field.html_name == 'status' or field.html_name == 'host_active' or field.html_name == 'pod_count' %}
+                            {{ pass }}
 
-                    <div class="control-group ">
-                        <label class="control-label">
-                            {% if field.field.required %}
-                                <span style="line-height: 40px;">{{ field.label }}</span>
-                            {% else %}
-                                <span style="font-weight: normal;line-height: 40px;">{{ field.label }}</span>
-                            {% endif %}
-                        </label>
-                        <div class="controls">
-                            {% if field.name in admin_class.list_filter %}
-                                <div >
-                                    {% get_selected_m2m_objects form_obj field.name as selected_m2m_objects %}
-
-                                    {% get_m2m_objects admin_class field.name selected_m2m_objects as m2m_objects  %}
-                                    <div class="col-lg-5">
-                                        <input oninput="FuzzySearch(this)" type="search" class="form-control">
-                                        <select  id="{{ field.name }}_from"  multiple class="form-control">
-                                            {% for obj in m2m_objects %}
-                                                <option ondblclick="MoveElementTo(this,'{{ field.name }}_to','{{ field.name }}')" value="{{ obj.id }}">{{ obj }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                    <div class="col-lg-5">
-                                        <select ele-type="right-select-ele" name="{{ field.name }}" id="{{ field.name }}_to" multiple class="form-control">
-                                            {% for obj in selected_m2m_objects %}
-                                                <option ondblclick="MoveElementTo(this,'{{ field.name }}_from','{{ field.name }}')"  value="{{ obj.id }}">{{ obj }}</option>
-                                            {% endfor %}
-                                        </select>
-                                    </div>
-                                </div>
-                            {% else %}
-                                <div class="controls  span11">
-                                {% if field.name == 'host_key'%}
-                                    <tr><th>
-                                        <textarea rows="8" cols="40"></textarea>
-                                    </th></tr>
+                        {% else %}
+                            <div class="control-group ">
+                            <label class="control-label">
+                                {% if field.field.required %}
+                                    <span style="line-height: 40px;">{{ field.label }}</span>
                                 {% else %}
-
-                                    {{ field }}
+                                    <span style="font-weight: normal;line-height: 40px;">{{ field.label }}</span>
                                 {% endif %}
-                                </div>
-                            {% endif %}
-                            <span style="color:gray;font-size: 10px">{{ field.help_text }}</span>
-                          <span style="color: red">{{ field.errors.0 }}  </span>
-                        </div>
+                            </label>
+                            <div class="controls">
+                                {% if field.name in admin_class.list_filter %}
+                                    <div >
+                                        {% get_selected_m2m_objects form_obj field.name as selected_m2m_objects %}
+
+                                        {% get_m2m_objects admin_class field.name selected_m2m_objects as m2m_objects  %}
+                                        <div class="col-lg-5">
+                                            <input oninput="FuzzySearch(this)" type="search" class="form-control">
+                                            <select  id="{{ field.name }}_from"  multiple class="form-control">
+                                                {% for obj in m2m_objects %}
+                                                    <option ondblclick="MoveElementTo(this,'{{ field.name }}_to','{{ field.name }}')" value="{{ obj.id }}">{{ obj }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                        <div class="col-lg-5">
+                                            <select ele-type="right-select-ele" name="{{ field.name }}" id="{{ field.name }}_to" multiple class="form-control">
+                                                {% for obj in selected_m2m_objects %}
+                                                    <option ondblclick="MoveElementTo(this,'{{ field.name }}_from','{{ field.name }}')"  value="{{ obj.id }}">{{ obj }}</option>
+                                                {% endfor %}
+                                            </select>
+                                        </div>
+                                    </div>
+                                {% else %}
+                                    <div class="controls  span11">
+                                    {% if field.name == 'host_key'%}
+                                        <tr><th>
+                                            <textarea rows="8" cols="40"></textarea>
+                                        </th></tr>
+                                    {% else %}
+
+                                        {{ field }}
+                                    {% endif %}
+                                    </div>
+                                {% endif %}
+                                <span style="color:gray;font-size: 10px">{{ field.help_text }}</span>
+                              <span style="color: red">{{ field.errors.0 }}  </span>
+                            </div>
                     </div>
                     {% endif %}
                 {% endfor %}

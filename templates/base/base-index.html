@@ -136,20 +136,31 @@
     <ul>
         <li class="active"><a href="/"><i class="icon icon-home"></i>
             <span>Dashboard</span></a> </li>
-        <li> <a href="/host_monitor_list/"><i class="icon icon-signal"></i> <span>主机 &amp; 流表</span></a> </li>
-{#    <li> <a href="widgets.html"><i class="icon icon-inbox"></i> <span>Widgets</span></a> </li>#}
-        <li><a href="/host_list/"><i class="icon icon-th"></i> <span>主机列表</span></a></li>
-        <li class="submenu"><a href="#"><i class="icon icon-fullscreen"></i> <span>集群管理</span></a>
+        <li class="submenu"><a href="#"><i class="icon icon-signal"></i> <span>监控</span></a>
+        <ul>
+            <li> <a href="/host_monitor_list/"><span>主机监控</span></a> </li>
+            <li> <a href="/pod_monitor_list/"><span>容器监控</span></a> </li>
+        </ul>
+
+        <li class="submenu"><a href="#"><i class="icon icon-th"></i> <span>列表</span></a>
+        <ul>
+            <li><a href="/host_list/"><span>主机列表</span></a></li>
+            <li><a href="/pod_list/"><span>容器</span></a></li>
+        </ul>
+
+
+        <li class="submenu"><a href="#"><i class="icon icon-fullscreen"></i> <span>集群</span></a>
+
             <ul>
                 <li><a href="/master_ns_list/">项目管理</a></li>
                 <li><a href="/master_monitor/">集群管理</a></li>
             </ul>
         <li class="submenu"> <a href="#"><i class="icon icon-th-list"></i>
-            <span>主机管理</span></a>
+            <span>主机</span></a>
             <ul>
                 <li><a href="/idc/">机房</a></li>
                 <li><a href="/host_group/">主机组</a></li>
-                <li><a href="/host_list/">主机</a></li>
+{#                <li><a href="/host_list/">主机</a></li>#}
             </ul>
         </li>
         <li><a href="buttons.html"><i class="icon icon-tint"></i> <span>日志</span><span class="label label-important">new</span></a></li>
